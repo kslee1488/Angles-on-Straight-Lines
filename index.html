@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angles on Straight Lines</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .bg-grid {
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        /* Custom animations to replicate tailwind-animate */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-slide-in { animation: slideInUp 0.3s ease-out forwards; }
+        .animate-zoom-in { animation: zoomIn 0.3s ease-out forwards; }
+        
+        /* Prevent selection during drag */
+        .no-select { user-select: none; -webkit-user-select: none; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 p-4 md:p-8 font-sans selection:bg-blue-200">
+    
+    <div class="max-w-6xl mx-auto space-y-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-center md:text-left space-y-1">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Angles on Straight Lines</h1>
+                <p class="text-slate-500 text-lg">Explore the geometric relationships between angles.</p>
+            </div>
+            
+            <button id="mode-toggle-btn" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-sm bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md">
+                <i data-lucide="play" id="mode-toggle-icon" class="w-5 h-5 fill-current"></i>
+                <span id="mode-toggle-text">Enter Quiz Mode</span>
+            </button>
+        </div>
+
+        <!-- EXPLORE MODE -->
+        <div id="explore-view" class="space-y-8 animate-fade-in">
+            <!-- Navigation Tabs -->
+            <div class="flex flex-col sm:flex-row justify-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-200 w-fit mx-auto md:mx-0" id="tabs-container">
+                <button data-tab="straight" class="tab-btn flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-200 outline-none bg-blue-600 text-white shadow-md scale-100">
+                    <i data-lucide="move-horizontal" class="w-5 h-5"></i> Straight Line (180°)
+                </button>
+                <button data-tab="point" class="tab-btn flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-200 outline-none text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    <i data-lucide="circle-dot" class="w-5 h-5"></i> Angles at Point (360°)
+                </button>
+                <button data-tab="vertical" class="tab-btn flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-200 outline-none text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i> Vertically Opposite
+                </button>
+            </div>
+
+            <!-- Workspace Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+                <!-- Interactive Canvas -->
+                <div class="lg:col-span-3 bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden relative">
+                    <div class="absolute top-4 left-4 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-semibold text-slate-500 flex items-center gap-1 border border-slate-200 z-10 shadow-sm">
+                        <i data-lucide="search" class="w-3.5 h-3.5"></i> Interactive Workspace
+                    </div>
+                    <div class="w-full relative pt-[100%] bg-grid">
+                        <svg id="explore-svg" viewBox="0 0 600 600" class="absolute inset-0 w-full h-full touch-none"></svg>
+                    </div>
+                </div>
+
+                <!-- Explanation Panel -->
+                <div class="lg:col-span-2 bg-white rounded-3xl shadow-xl border border-slate-200 p-8 h-full flex flex-col justify-center" id="explore-panel">
+                    <!-- Dynamic content injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- QUIZ MODE -->
+        <div id="quiz-view" class="hidden bg-white rounded-3xl shadow-xl border border-slate-200 p-6 md:p-10 animate-zoom-in">
+            
+            <!-- Quiz Setup Screen -->
+            <div id="quiz-setup" class="max-w-md mx-auto text-center space-y-6 py-12">
+                <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="trophy" class="w-10 h-10"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-slate-800">Geometry Quiz</h2>
+                <p class="text-slate-600">Test your knowledge of adjacent angles on a straight line, angles at a point, and vertically opposite angles.</p>
+                
+                <form id="quiz-start-form" class="space-y-4 pt-4">
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                        <input type="text" id="quiz-username-input" placeholder="Enter your name" class="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-slate-200 focus:border-indigo-600 focus:ring-0 outline-none text-lg transition-colors font-medium text-slate-800" required />
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                        <i data-lucide="play" class="w-5 h-5 fill-current"></i> Start Quiz
+                    </button>
+                </form>
+            </div>
+
+            <!-- Quiz Playing Screen -->
+            <div id="quiz-playing" class="hidden space-y-8 animate-fade-in">
+                <!-- Quiz Top Bar -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </div>
+                        <span id="display-username" class="font-bold text-slate-800 text-lg"></span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-green-100 p-2 rounded-lg text-green-600">
+                                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                            </div>
+                            <div class="text-right sm:text-left">
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Correct</p>
+                                <p id="display-correct" class="font-black text-2xl text-slate-800 leading-none">0</p>
+                            </div>
+                        </div>
+                        <div class="hidden sm:block w-px h-8 bg-slate-200"></div>
+                        <div class="flex items-center gap-3">
+                            <div class="bg-amber-100 p-2 rounded-lg text-amber-600">
+                                <i data-lucide="trophy" class="w-5 h-5"></i>
+                            </div>
+                            <div class="text-right sm:text-left">
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Attempted</p>
+                                <p id="display-attempt" class="font-black text-2xl text-slate-800 leading-none">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+                    <!-- Quiz Canvas -->
+                    <div class="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden relative">
+                        <div class="absolute top-4 left-4 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold text-indigo-600 flex items-center gap-1 border border-indigo-100 z-10 shadow-sm">
+                            Find Angle 'x'
+                        </div>
+                        <div class="w-full relative pt-[100%] bg-grid">
+                            <svg id="quiz-svg" viewBox="0 0 600 600" class="absolute inset-0 w-full h-full touch-none"></svg>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Controls -->
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-800 mb-2">Calculate Angle x</h3>
+                            <p id="quiz-question-desc" class="text-slate-600 text-lg"></p>
+                        </div>
+
+                        <form id="quiz-answer-form" class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <input type="number" id="quiz-answer-input" placeholder="Enter degrees" class="flex-1 px-4 py-4 rounded-xl border-2 border-slate-200 focus:border-indigo-600 outline-none text-xl font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500" required />
+                                <span class="text-3xl font-bold text-slate-400">°</span>
+                            </div>
+                            
+                            <button type="submit" id="quiz-submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
+                                Check Answer
+                            </button>
+                        </form>
+
+                        <!-- Feedback Area -->
+                        <div id="quiz-feedback-container" class="hidden animate-slide-in">
+                            <!-- Dynamic feedback injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Core State ---
+        const state = {
+            activeTab: 'straight',
+            isQuizMode: false,
+            quizState: 'setup', // 'setup', 'playing'
+            userName: '',
+            correctCount: 0,
+            attemptCount: 0,
+            hasAttemptedCurrent: false,
+            quizQuestion: null,
+            userAnswer: '',
+            feedback: null, // { type: 'success'|'error', text: '...' }
+            straightAngle: 60,
+            pointAngles: [45, 150, 270],
+            vAngles: [30, 135],
+            dragState: null,
+            quizTimer: null
+        };
+
+        const COLORS = [
+            { fill: 'rgba(59, 130, 246, 0.2)', stroke: '#3b82f6', text: '#1d4ed8' }, // Blue
+            { fill: 'rgba(244, 63, 94, 0.2)',  stroke: '#f43f5e', text: '#be123c' }, // Rose
+            { fill: 'rgba(16, 185, 129, 0.2)', stroke: '#10b981', text: '#047857' }, // Emerald
+            { fill: 'rgba(245, 158, 11, 0.2)', stroke: '#f59e0b', text: '#b45309' }, // Amber
+        ];
+
+        // --- Math Helpers ---
+        const polarToCartesian = (cx, cy, r, angleInDegrees) => {
+            const angleInRadians = (angleInDegrees * Math.PI) / 180.0;
+            return {
+                x: cx + r * Math.cos(angleInRadians),
+                y: cy - r * Math.sin(angleInRadians),
+            };
+        };
+
+        const createArcPath = (cx, cy, r, startAngle, endAngle) => {
+            let diff = (endAngle - startAngle + 360) % 360;
+            if (Math.abs(diff) < 0.1) diff = 360;
+            if (diff === 0) return "";
+            const endAngleMod = startAngle + diff;
+            const start = polarToCartesian(cx, cy, r, startAngle);
+            const end = polarToCartesian(cx, cy, r, endAngleMod);
+            const largeArcFlag = diff <= 180 ? "0" : "1";
+            return ["M", cx, cy, "L", start.x, start.y, "A", r, r, 0, largeArcFlag, 0, end.x, end.y, "Z"].join(" ");
+        };
+
+        const getAngleDiff = (start, end) => (end - start + 360) % 360;
+
+        // --- SVG Render Generators ---
+        const renderHaloText = (x, y, text, color) => `
+            <g>
+                <text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" 
+                    stroke="white" stroke-width="8" stroke-linejoin="round" 
+                    font-size="32" font-weight="bold"
+                    class="no-select pointer-events-none opacity-90">${text}</text>
+                <text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" 
+                    fill="${color}" font-size="32" font-weight="bold"
+                    class="no-select pointer-events-none">${text}</text>
+            </g>
+        `;
+
+        const renderHandle = (angle, id) => {
+            const pos = polarToCartesian(300, 300, 240, angle);
+            const isDragging = state.dragState === id;
+            return `
+                <g data-handle="${id}" class="cursor-grab active:cursor-grabbing">
+                    <circle cx="${pos.x}" cy="${pos.y}" r="30" fill="transparent" />
+                    <circle cx="${pos.x}" cy="${pos.y}" r="${isDragging ? 10 : 8}" 
+                        fill="${isDragging ? '#cbd5e1' : 'white'}" 
+                        stroke="#334155" stroke-width="3" 
+                        class="transition-all duration-100" />
+                </g>
+            `;
+        };
+
+        const generateStraightLineSVG = () => {
+            const isQuiz = state.isQuizMode && state.quizQuestion?.type === 'straight';
+            const angle1 = isQuiz ? state.quizQuestion.straightAngle : state.straightAngle;
+            const angle2 = 180 - angle1;
+            const arcRadius = 90;
+            const labelRadius = 135;
+            const mid1 = angle1 / 2;
+            const mid2 = angle1 + (180 - angle1) / 2;
+            const pos1 = polarToCartesian(300, 300, labelRadius, mid1);
+            const pos2 = polarToCartesian(300, 300, labelRadius, mid2);
+            const label1 = isQuiz && state.quizQuestion.unknownIndex === 0 ? "x°" : `${Math.round(angle1)}°`;
+            const label2 = isQuiz && state.quizQuestion.unknownIndex === 1 ? "x°" : `${Math.round(angle2)}°`;
+
+            let svg = `
+                <line x1="50" y1="300" x2="550" y2="300" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
+                <circle cx="300" cy="300" r="5" fill="#334155" />
+            `;
+            if (angle1 > 0) svg += `<path d="${createArcPath(300, 300, arcRadius, 0, angle1)}" fill="${COLORS[0].fill}" stroke="${COLORS[0].stroke}" stroke-width="3" />`;
+            if (angle2 > 0) svg += `<path d="${createArcPath(300, 300, arcRadius, angle1, 180)}" fill="${COLORS[1].fill}" stroke="${COLORS[1].stroke}" stroke-width="3" />`;
+            
+            const rayEnd = polarToCartesian(300, 300, 240, angle1);
+            svg += `<line x1="300" y1="300" x2="${rayEnd.x}" y2="${rayEnd.y}" stroke="#334155" stroke-width="4" stroke-linecap="round" />`;
+            
+            if (!isQuiz) svg += renderHandle(state.straightAngle, 0);
+            if (angle1 > 5) svg += renderHaloText(pos1.x, pos1.y, label1, COLORS[0].text);
+            if (angle2 > 5) svg += renderHaloText(pos2.x, pos2.y, label2, COLORS[1].text);
+
+            return svg;
+        };
+
+        const generateAnglesAtPointSVG = () => {
+            const isQuiz = state.isQuizMode && state.quizQuestion?.type === 'point';
+            const anglesToUse = isQuiz ? state.quizQuestion.pointAngles : state.pointAngles;
+            const sorted = [...anglesToUse].map((angle, originalIndex) => ({ angle, originalIndex })).sort((a, b) => a.angle - b.angle);
+            const arcRadius = 90;
+            const labelRadius = 140;
+
+            let svg = `<circle cx="300" cy="300" r="5" fill="#334155" />`;
+
+            sorted.forEach((item, i) => {
+                const nextItem = sorted[(i + 1) % sorted.length];
+                const diff = getAngleDiff(item.angle, nextItem.angle);
+                const midAngle = item.angle + diff / 2;
+                const labelPos = polarToCartesian(300, 300, labelRadius, midAngle);
+                const isUnknown = isQuiz && i === state.quizQuestion.unknownIndex;
+                const label = isUnknown ? "x°" : `${Math.round(diff)}°`;
+                const rayEnd = polarToCartesian(300, 300, 240, item.angle);
+
+                svg += `
+                    <g>
+                        <path d="${createArcPath(300, 300, arcRadius, item.angle, item.angle + diff)}" fill="${COLORS[i].fill}" stroke="${COLORS[i].stroke}" stroke-width="3" />
+                        <line x1="300" y1="300" x2="${rayEnd.x}" y2="${rayEnd.y}" stroke="#334155" stroke-width="4" stroke-linecap="round" />
+                        ${diff > 10 ? renderHaloText(labelPos.x, labelPos.y, label, COLORS[i].text) : ''}
+                    </g>
+                `;
+            });
+
+            if (!isQuiz) state.pointAngles.forEach((angle, id) => { svg += renderHandle(angle, id); });
+            return svg;
+        };
+
+        const generateVerticalSVG = () => {
+            const isQuiz = state.isQuizMode && state.quizQuestion?.type === 'vertical';
+            const anglesToUse = isQuiz ? state.quizQuestion.vAngles : state.vAngles;
+            const allAngles = [anglesToUse[0], anglesToUse[0] + 180, anglesToUse[1], anglesToUse[1] + 180].map(a => Math.round(a % 360));
+            const sorted = [...allAngles].sort((a, b) => a - b);
+            const arcRadius = 90;
+            const labelRadius = 140;
+
+            let svg = `<circle cx="300" cy="300" r="5" fill="#334155" />`;
+
+            sorted.forEach((angle, i) => {
+                const nextAngle = sorted[(i + 1) % sorted.length];
+                const diff = getAngleDiff(angle, nextAngle);
+                const midAngle = angle + diff / 2;
+                const labelPos = polarToCartesian(300, 300, labelRadius, midAngle);
+                const colorIndex = (i % 2 === 0) ? 0 : 2;
+                
+                let showLabel = false;
+                let label = `${Math.round(diff)}°`;
+
+                if (isQuiz) {
+                    if (i === state.quizQuestion.showIndex) showLabel = true;
+                    if (i === state.quizQuestion.unknownIndex) { showLabel = true; label = "x°"; }
+                } else {
+                    showLabel = diff > 10;
+                }
+
+                svg += `
+                    <g>
+                        <path d="${createArcPath(300, 300, arcRadius, angle, angle + diff)}" fill="${COLORS[colorIndex].fill}" stroke="${COLORS[colorIndex].stroke}" stroke-width="3" />
+                        ${showLabel ? renderHaloText(labelPos.x, labelPos.y, label, COLORS[colorIndex].text) : ''}
+                    </g>
+                `;
+            });
+
+            [0, 1].forEach(id => {
+                const p1 = polarToCartesian(300, 300, 240, anglesToUse[id]);
+                const p2 = polarToCartesian(300, 300, 240, anglesToUse[id] + 180);
+                svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#334155" stroke-width="4" stroke-linecap="round" />`;
+            });
+
+            if (!isQuiz) state.vAngles.forEach((angle, id) => { svg += renderHandle(angle, id); });
+            return svg;
+        };
+
+        // --- View Updaters ---
+        const updateSVG = () => {
+            const svgEl = state.isQuizMode ? document.getElementById('quiz-svg') : document.getElementById('explore-svg');
+            if (!svgEl) return;
+            
+            const targetType = state.isQuizMode ? state.quizQuestion?.type : state.activeTab;
+            if (targetType === 'straight') svgEl.innerHTML = generateStraightLineSVG();
+            else if (targetType === 'point') svgEl.innerHTML = generateAnglesAtPointSVG();
+            else if (targetType === 'vertical') svgEl.innerHTML = generateVerticalSVG();
+        };
+
+        const updateExplorePanel = () => {
+            const panel = document.getElementById('explore-panel');
+            if (state.activeTab === 'straight') {
+                const a = Math.round(state.straightAngle);
+                const b = Math.round(180 - state.straightAngle);
+                panel.innerHTML = `
+                    <div class="space-y-4 animate-fade-in">
+                        <h2 class="text-2xl font-bold text-slate-800">Adjacent Angles on a Straight Line</h2>
+                        <p class="text-slate-600">When a straight line is divided into two adjacent angles, they always add up to exactly 180°. These are also called <strong>supplementary angles</strong>.</p>
+                        <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-sm mt-6">
+                            <p class="text-center text-slate-500 font-medium mb-2">Current Equation</p>
+                            <div class="flex justify-center items-center gap-4 text-2xl font-mono">
+                                <span style="color: ${COLORS[0].text}">${a}°</span>
+                                <span class="text-slate-400">+</span>
+                                <span style="color: ${COLORS[1].text}">${b}°</span>
+                                <span class="text-slate-400">=</span>
+                                <span class="font-bold text-slate-800">180°</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm text-blue-600 bg-blue-50 p-4 rounded-lg">
+                            <i data-lucide="mouse-pointer-2" class="w-5 h-5 flex-shrink-0"></i>
+                            <p>Drag the white handle on the diagram to see how the angles adjust while keeping their sum constant.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (state.activeTab === 'point') {
+                const sorted = [...state.pointAngles].sort((a, b) => a - b);
+                const angles = [getAngleDiff(sorted[0], sorted[1]), getAngleDiff(sorted[1], sorted[2]), getAngleDiff(sorted[2], sorted[0])].map(Math.round);
+                panel.innerHTML = `
+                    <div class="space-y-4 animate-fade-in">
+                        <h2 class="text-2xl font-bold text-slate-800">Angles at a Point</h2>
+                        <p class="text-slate-600">Angles surrounding a single central point always complete a full circle, meaning they add up to exactly 360°.</p>
+                        <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-sm mt-6">
+                            <p class="text-center text-slate-500 font-medium mb-2">Current Equation</p>
+                            <div class="flex justify-center items-center flex-wrap gap-x-3 gap-y-2 text-2xl font-mono">
+                                <span style="color: ${COLORS[0].text}">${angles[0]}°</span>
+                                <span class="text-slate-400">+</span>
+                                <span style="color: ${COLORS[1].text}">${angles[1]}°</span>
+                                <span class="text-slate-400">+</span>
+                                <span style="color: ${COLORS[2].text}">${angles[2]}°</span>
+                                <span class="text-slate-400">=</span>
+                                <span class="font-bold text-slate-800">360°</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm text-blue-600 bg-blue-50 p-4 rounded-lg">
+                            <i data-lucide="mouse-pointer-2" class="w-5 h-5 flex-shrink-0"></i>
+                            <p>Drag any of the three white handles. The sum of all angles forming the complete circle remains 360°.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (state.activeTab === 'vertical') {
+                const diff1 = Math.round(getAngleDiff(state.vAngles[0], state.vAngles[1]));
+                const angleA = Math.min(diff1, 360 - diff1);
+                const angleB = 180 - angleA;
+                panel.innerHTML = `
+                    <div class="space-y-4 animate-fade-in">
+                        <h2 class="text-2xl font-bold text-slate-800">Vertically Opposite Angles</h2>
+                        <p class="text-slate-600">When two straight lines intersect, they form four angles. The angles that are directly opposite each other are <strong>always equal</strong>.</p>
+                        <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 shadow-sm mt-6 space-y-4">
+                            <p class="text-center text-slate-500 font-medium mb-2">Opposite Pairs</p>
+                            <div class="flex justify-center items-center gap-4 text-xl font-mono">
+                                <span class="text-slate-500">Pair 1:</span>
+                                <span style="color: ${COLORS[0].text}">${angleA}°</span>
+                                <span class="text-slate-400">=</span>
+                                <span style="color: ${COLORS[0].text}">${angleA}°</span>
+                            </div>
+                            <div class="flex justify-center items-center gap-4 text-xl font-mono">
+                                <span class="text-slate-500">Pair 2:</span>
+                                <span style="color: ${COLORS[2].text}">${angleB}°</span>
+                                <span class="text-slate-400">=</span>
+                                <span style="color: ${COLORS[2].text}">${angleB}°</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm text-blue-600 bg-blue-50 p-4 rounded-lg">
+                            <i data-lucide="mouse-pointer-2" class="w-5 h-5 flex-shrink-0"></i>
+                            <p>Drag either line using its handle to see the equal opposite pairs update dynamically.</p>
+                        </div>
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        };
+
+        const updateQuizUI = () => {
+            const fbContainer = document.getElementById('quiz-feedback-container');
+            const submitBtn = document.getElementById('quiz-submit-btn');
+            const inputEl = document.getElementById('quiz-answer-input');
+
+            document.getElementById('display-username').textContent = state.userName;
+            document.getElementById('display-correct').textContent = state.correctCount;
+            document.getElementById('display-attempt').textContent = state.attemptCount;
+
+            if (state.quizQuestion) {
+                const descMap = {
+                    'straight': "These are adjacent angles on a straight line. What is the value of x?",
+                    'point': "These angles meet at a point to form a full circle. What is the value of x?",
+                    'vertical': "These are intersecting straight lines. What is the value of x?"
+                };
+                document.getElementById('quiz-question-desc').textContent = descMap[state.quizQuestion.type];
+            }
+
+            if (!state.feedback) {
+                fbContainer.classList.add('hidden');
+                fbContainer.innerHTML = '';
+                submitBtn.classList.remove('hidden');
+                inputEl.disabled = false;
+                submitBtn.disabled = !state.userAnswer;
+            } else {
+                submitBtn.classList.add('hidden');
+                inputEl.disabled = true;
+                fbContainer.classList.remove('hidden');
+                
+                const isSuccess = state.feedback.type === 'success';
+                const colorClasses = isSuccess ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800';
+                const iconName = isSuccess ? 'check-circle-2' : 'x-circle';
+                
+                let solutionHTML = '';
+                if (!isSuccess && state.quizQuestion) {
+                    const q = state.quizQuestion;
+                    if (q.type === 'straight') {
+                        const known = 180 - q.unknownAngle;
+                        solutionHTML = `
+                            <div class="w-full bg-white/60 p-4 rounded-lg text-left space-y-2 text-lg text-slate-800 border border-red-100 w-full mt-4">
+                                <p class="font-semibold text-red-900">Solution:</p>
+                                <p>Adjacent angles on a straight line add up to 180°.</p>
+                                <div class="font-mono bg-white p-3 rounded-lg border border-red-50 mt-2 grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-1.5 shadow-sm text-base">
+                                    <div class="text-right text-slate-600">x + ${known}°</div><div class="text-slate-400">=</div><div class="text-left text-slate-600">180°</div>
+                                    <div class="text-right text-slate-600">x</div><div class="text-slate-400">=</div><div class="text-left text-slate-600">180° - ${known}°</div>
+                                    <div class="text-right font-bold text-red-700">x</div><div class="font-bold text-red-700">=</div><div class="text-left font-bold text-red-700">${q.unknownAngle}°</div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (q.type === 'point') {
+                        const diffs = [
+                            getAngleDiff(q.pointAngles[0], q.pointAngles[1]),
+                            getAngleDiff(q.pointAngles[1], q.pointAngles[2]),
+                            getAngleDiff(q.pointAngles[2], q.pointAngles[0])
+                        ].map(Math.round);
+                        const knownDiffs = diffs.filter((_, i) => i !== q.unknownIndex);
+                        solutionHTML = `
+                            <div class="w-full bg-white/60 p-4 rounded-lg text-left space-y-2 text-lg text-slate-800 border border-red-100 w-full mt-4">
+                                <p class="font-semibold text-red-900">Solution:</p>
+                                <p>Angles at a point add up to 360°.</p>
+                                <div class="font-mono bg-white p-3 rounded-lg border border-red-50 mt-2 grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-1.5 shadow-sm text-base">
+                                    <div class="text-right text-slate-600">x + ${knownDiffs[0]}° + ${knownDiffs[1]}°</div><div class="text-slate-400">=</div><div class="text-left text-slate-600">360°</div>
+                                    <div class="text-right text-slate-600">x + ${knownDiffs[0] + knownDiffs[1]}°</div><div class="text-slate-400">=</div><div class="text-left text-slate-600">360°</div>
+                                    <div class="text-right text-slate-600">x</div><div class="text-slate-400">=</div><div class="text-left text-slate-600">360° - ${knownDiffs[0] + knownDiffs[1]}°</div>
+                                    <div class="text-right font-bold text-red-700">x</div><div class="font-bold text-red-700">=</div><div class="text-left font-bold text-red-700">${q.unknownAngle}°</div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (q.type === 'vertical') {
+                        solutionHTML = `
+                            <div class="w-full bg-white/60 p-4 rounded-lg text-left space-y-2 text-lg text-slate-800 border border-red-100 w-full mt-4">
+                                <p class="font-semibold text-red-900">Solution:</p>
+                                <p>Vertically opposite angles are equal.</p>
+                                <div class="font-mono bg-white p-3 rounded-lg border border-red-50 mt-2 grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-1.5 shadow-sm text-base">
+                                    <div class="text-right font-bold text-red-700">x</div><div class="font-bold text-red-700">=</div><div class="text-left font-bold text-red-700">${q.unknownAngle}°</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                let nextBtnHTML = '';
+                if (!isSuccess) {
+                    nextBtnHTML = `
+                        <button id="next-q-btn" class="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all flex items-center gap-2 shadow-sm">
+                            Next Question <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </button>
+                    `;
+                }
+
+                fbContainer.innerHTML = `
+                    <div class="p-5 rounded-xl border-2 flex flex-col items-center text-center w-full ${colorClasses}">
+                        <div class="flex items-center gap-2 font-bold text-xl">
+                            <i data-lucide="${iconName}" class="w-6 h-6"></i>
+                            ${state.feedback.text}
+                        </div>
+                        ${solutionHTML}
+                        ${nextBtnHTML}
+                    </div>
+                `;
+                lucide.createIcons();
+                
+                const nextBtn = document.getElementById('next-q-btn');
+                if (nextBtn) nextBtn.addEventListener('click', generateQuestion);
+            }
+        };
+
+        const renderApp = () => {
+            const toggleBtn = document.getElementById('mode-toggle-btn');
+            const toggleText = document.getElementById('mode-toggle-text');
+            const exploreView = document.getElementById('explore-view');
+            const quizView = document.getElementById('quiz-view');
+            
+            if (state.isQuizMode) {
+                toggleBtn.className = "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-sm bg-slate-800 text-white hover:bg-slate-700";
+                toggleText.textContent = "Return to Explore Mode";
+                document.getElementById('mode-toggle-icon').setAttribute('data-lucide', 'search');
+                
+                exploreView.classList.add('hidden');
+                quizView.classList.remove('hidden');
+
+                const quizSetup = document.getElementById('quiz-setup');
+                const quizPlaying = document.getElementById('quiz-playing');
+
+                if (state.quizState === 'setup') {
+                    quizSetup.classList.remove('hidden');
+                    quizPlaying.classList.add('hidden');
+                } else {
+                    quizSetup.classList.add('hidden');
+                    quizPlaying.classList.remove('hidden');
+                    updateQuizUI();
+                }
+            } else {
+                toggleBtn.className = "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-sm bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md";
+                toggleText.textContent = "Enter Quiz Mode";
+                document.getElementById('mode-toggle-icon').setAttribute('data-lucide', 'play');
+                
+                quizView.classList.add('hidden');
+                exploreView.classList.remove('hidden');
+
+                // Update tab styles
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    const isActive = btn.getAttribute('data-tab') === state.activeTab;
+                    btn.className = `tab-btn flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-200 outline-none ${isActive ? 'bg-blue-600 text-white shadow-md scale-100' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`;
+                });
+
+                updateExplorePanel();
+            }
+            
+            updateSVG();
+            lucide.createIcons();
+        };
+
+        // --- Logic / Handlers ---
+        const generateQuestion = () => {
+            if (state.quizTimer) clearTimeout(state.quizTimer);
+            state.hasAttemptedCurrent = false;
+            const types = ['straight', 'point', 'vertical'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            let questionData = { type };
+
+            if (type === 'straight') {
+                const a1 = Math.floor(Math.random() * 120) + 30; 
+                const a2 = 180 - a1;
+                const isFirstUnknown = Math.random() > 0.5;
+                questionData.straightAngle = a1;
+                questionData.unknownAngle = isFirstUnknown ? a1 : a2;
+                questionData.unknownIndex = isFirstUnknown ? 0 : 1;
+            } else if (type === 'point') {
+                const a1 = Math.floor(Math.random() * 100) + 40;
+                const a2 = Math.floor(Math.random() * 100) + 40;
+                const a3 = 360 - a1 - a2;
+                const diffs = [a1, a2, a3];
+                const unknownIndex = Math.floor(Math.random() * 3);
+                questionData.pointAngles = [0, a1, a1 + a2];
+                questionData.unknownAngle = diffs[unknownIndex];
+                questionData.unknownIndex = unknownIndex;
+            } else if (type === 'vertical') {
+                const a1 = Math.floor(Math.random() * 120) + 30;
+                questionData.vAngles = [0, a1];
+                const showIndex = Math.floor(Math.random() * 4);
+                const oppIndex = (showIndex + 2) % 4;
+                questionData.showIndex = showIndex;
+                questionData.unknownIndex = oppIndex;
+                questionData.unknownAngle = (showIndex % 2 === 0) ? a1 : 180 - a1;
+            }
+            
+            state.quizQuestion = questionData;
+            state.userAnswer = '';
+            state.feedback = null;
+            document.getElementById('quiz-answer-input').value = '';
+            updateSVG();
+            updateQuizUI();
+        };
+
+        const handlePointerMove = (e) => {
+            if (state.dragState === null || state.isQuizMode) return;
+            
+            const svgEl = document.getElementById('explore-svg');
+            if (!svgEl) return;
+            const rect = svgEl.getBoundingClientRect();
+            
+            const scaleX = 600 / rect.width;
+            const scaleY = 600 / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const x = (clientX - rect.left) * scaleX;
+            const y = (clientY - rect.top) * scaleY;
+
+            let angle = Math.atan2(300 - y, x - 300) * (180 / Math.PI);
+            if (angle < 0) angle += 360;
+
+            if (state.activeTab === 'straight') {
+                if (angle > 180 && angle <= 270) angle = 180;
+                if (angle > 270 && angle < 360) angle = 0;
+                state.straightAngle = Math.round(angle);
+            } else if (state.activeTab === 'point') {
+                state.pointAngles[state.dragState] = Math.round(angle);
+            } else if (state.activeTab === 'vertical') {
+                state.vAngles[state.dragState] = Math.round(angle);
+            }
+            
+            updateSVG();
+            updateExplorePanel();
+        };
+
+        // --- Event Listeners Setup ---
+        document.getElementById('mode-toggle-btn').addEventListener('click', () => {
+            state.isQuizMode = !state.isQuizMode;
+            state.quizState = 'setup';
+            state.correctCount = 0;
+            state.attemptCount = 0;
+            if (state.quizTimer) clearTimeout(state.quizTimer);
+            renderApp();
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                state.activeTab = e.currentTarget.getAttribute('data-tab');
+                renderApp();
+            });
+        });
+
+        // Setup Dragging (Event Delegation on SVGs)
+        const handleDragStart = (e) => {
+            const handle = e.target.closest('[data-handle]');
+            if (handle && !state.isQuizMode) {
+                e.preventDefault();
+                state.dragState = parseInt(handle.getAttribute('data-handle'), 10);
+                updateSVG(); // for visual feedback of grab
+            }
+        };
+
+        document.getElementById('explore-svg').addEventListener('pointerdown', handleDragStart);
+        document.getElementById('explore-svg').addEventListener('touchstart', handleDragStart, { passive: false });
+
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('touchmove', handlePointerMove, { passive: false });
+        
+        const endDrag = () => {
+            if (state.dragState !== null) {
+                state.dragState = null;
+                updateSVG(); // release visual
+            }
+        };
+        window.addEventListener('pointerup', endDrag);
+        window.addEventListener('touchend', endDrag);
+
+        // Quiz Form Events
+        document.getElementById('quiz-start-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('quiz-username-input').value;
+            if (!name.trim()) return;
+            state.userName = name;
+            state.correctCount = 0;
+            state.attemptCount = 0;
+            state.quizState = 'playing';
+            renderApp();
+            generateQuestion();
+        });
+
+        const answerInput = document.getElementById('quiz-answer-input');
+        answerInput.addEventListener('input', (e) => {
+            state.userAnswer = e.target.value;
+            document.getElementById('quiz-submit-btn').disabled = !state.userAnswer;
+        });
+
+        document.getElementById('quiz-answer-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!state.userAnswer || state.feedback) return;
+            
+            if (!state.hasAttemptedCurrent) {
+                state.attemptCount++;
+                state.hasAttemptedCurrent = true;
+            }
+            
+            const numericAnswer = parseInt(state.userAnswer);
+            if (numericAnswer === state.quizQuestion.unknownAngle) {
+                state.correctCount++;
+                state.feedback = { type: 'success', text: 'Correct! Loading next question in 3s...' };
+                updateQuizUI();
+                state.quizTimer = setTimeout(() => {
+                    generateQuestion();
+                }, 3000);
+            } else {
+                state.feedback = { type: 'error', text: 'Incorrect. See the solution below.' };
+                updateQuizUI();
+            }
+        });
+
+        // Initial Render
+        renderApp();
+    </script>
+</body>
+</html>
